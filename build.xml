@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+
+<project name="Java Web Application" default="package" basedir=".">
+
+    <description>
+        Java Web Application
+    </description>
+
+    <property file="build.properties"/>
+
+    <available file="${javasource.home}" type="dir" property="javasource.home.present"/>
+    <available file="${resources.home}" type="dir" property="resources.home.present"/>
+    <available file="${lib.home}" type="dir" property="lib.home.present"/>
+    <!--available file="${lib.external}" type="dir" property="lib.external.present"/-->
+    <available file="${webapp.home}" type="dir" property="webapp.home.present"/>
+
+
+
+    <!-- =========================== Clean Target ========================== -->
+
+    <!--
+
+      The "clean" target deletes any previous "target" directory, so that you
+      can be ensured the application can be built from scratch.
+
+    -->
+
+    <target name="clean" description="Delete old target directory">
+        <delete dir="${target.home}"/>
+    </target>
+
+    <!-- =========================== Init Target =========================== -->
+
+    <!--
+
+      The "init" target is used to create the "target" destination directory,
+      Normally, this task is executed indirectly when needed.
+
+    -->
+
+    <target name="init" depends="clean" description="Create target directory">
+        <mkdir dir="${target.home}" />
+        <mkdir dir="${target.home}/classes" />
+    </target>
+
+    <!-- ==================== Resources From Java Target =================== -->
+
+    <!--
+
+      The "resources from java" target copies resources files from "java"
+      directory to classes destination directory.
+
+    -->
+
+    <target name="resourcesfromjavasource" depends="init"
+            if="javasource.home.present"
+            description="Copy resources from javasources directory">
+
+        <copy todir="${target.home}/classes">
+            <fileset dir="${javasource.home}" excludes="SVN,**/*.java" />
+        </copy>
+
+    </target>
+
+    <!-- ================= Resources From Resources Target ================= -->
+
+    <!--
+
+      The "resources from resources" target copies resources files from
+      "resources" directory to classes destination directory.
+
+    -->
+
+    <target name="resourcesfromresources" depends="resourcesfromjavasource"
+            if="resources.home.present"
+            description="Copy resources from resources directory">
+
+        <copy todir="${target.home}/classes">
+            <fileset dir="${resources.home}" excludes="SVN" />
+        </copy>
+
+    </target>
+
+    <!-- ========================== Compile Target ========================= -->
+
+    <!--
+
+      The "compile" target transforms source files (from your "src" directory)
+      into class files in the appropriate location in the target directory
+      and copies non Java files to it.
+
+    -->
+
+    <target name="compile" depends="resourcesfromresources"
+            if="javasource.home.present"
+            description="Compile Java sources">
+
+        <javac srcdir="${javasource.home}"
+               destdir="${target.home}/classes"
+               debug="${compile.debug}"
+               deprecation="${compile.deprecation}"
+               optimize="${compile.optimize}"
+               includeantruntime="false">
+
+            <classpath>
+                <path>
+                    <fileset dir="${lib.home}" />
+                    <!--fileset dir="${lib.external}" /-->
+                </path>
+            </classpath>
+
+        </javac>
+
+    </target>
+
+    <!-- ======================== Init Build Target ======================== -->
+
+    <!--
+
+      The "initbuild" target creates the application directory to be packaged.
+
+    -->
+
+    <target name="initbuild" depends="compile"
+            description="Creates the application directory to be packaged">
+
+        <mkdir dir="${target.home}/${app.build}" />
+    </target>
+
+    <!-- ======================= Build Webapp Target ======================= -->
+
+    <!--
+
+      The "buildwebapp" target copies the webapp directory into the build
+      directory.
+
+    -->
+
+    <target name="buildwebapp" depends="initbuild" if="webapp.home.present"
+            description="Copies the webapp directory into the build directory">
+
+        <copy todir="${target.home}/${app.build}">
+            <fileset dir="${webapp.home}" />
+        </copy>
+    </target>
+
+    <!-- ========================== Build Lib Target ======================= -->
+
+    <!--
+
+      The "buildlib" target copies the lib directory into the build/WEB-INF
+      directory.
+
+    -->
+
+    <target name="buildlib" depends="buildwebapp" if="lib.home.present"
+            description="Copies the lib directory into the build/WEB-INF directory">
+
+        <copy todir="${target.home}/${app.build}/WEB-INF">
+            <fileset dir="${lib.home}/.." includes="lib/**" />
+        </copy>
+    </target>
+
+    <!-- =========================== Build Target ========================== -->
+
+    <!--
+
+      The "build" target copies the classes directory the build directory.
+
+    -->
+
+    <target name="build" depends="buildlib"
+            description="Copies the classes directory the build directory">
+
+        <copy todir="${target.home}/${app.build}/WEB-INF">
+            <fileset dir="${target.home}" includes="classes/**" />
+        </copy>
+    </target>
+
+    <!-- ========================== Package Target ========================= -->
+
+    <!--
+
+      The "Package" target packages the build directory.
+
+    -->
+
+    <target name="package" depends="build" description="packages the build directory">
+        <!-- Create application WAR file -->
+        <jar jarfile="${target.home}/${app.build}.war"
+             basedir="${target.home}/${app.build}" />
+    </target>
+
+
+</project>
